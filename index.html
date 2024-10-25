@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POS System - Demo</title>
+  <style>
+    /* Global Styling */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #F4F6F8;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      width: 100%;
+      max-width: 400px;
+      background-color: #fff;
+      border-radius: 12px;
+      box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: bold;
+      color: #4CAF50;
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    /* Menu Styling */
+    .menu {
+      display: flex;
+      justify-content: space-around;
+      background-color: #4CAF50;
+      padding: 10px;
+      border-radius: 12px 12px 0 0;
+    }
+    .menu button {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      color: white;
+      background: transparent;
+      border: none;
+      outline: none;
+      transition: background-color 0.2s ease-in-out;
+    }
+    .menu button:hover, .menu button.active {
+      background-color: #388E3C;
+    }
+
+    /* Section Styling */
+    .section {
+      padding: 20px;
+      display: none;
+    }
+    .section.active {
+      display: block;
+    }
+
+    /* Camera Simulation */
+    .camera-container, .preview-container, .item-details, .sell-details {
+      margin-top: 15px;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    .fake-camera, .preview-img {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+      background-color: #E0E0E0;
+      color: #555;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    /* Button Styling */
+    .button {
+      display: inline-block;
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background-color: #4CAF50;
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s ease-in-out;
+    }
+    .button:hover {
+      background-color: #388E3C;
+    }
+
+    /* Inventory & Analytics List */
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      background: #F4F6F8;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.05);
+      display: flex;
+      justify-content: space-between;
+      font-size: 16px;
+    }
+    /* Analytics Section Styling */
+    .analytics-total {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #388E3C;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>POS System Demo</h1>
+
+  <!-- Navigation Menu -->
+  <div class="menu">
+    <button onclick="showSection('register-item')" class="active">Register</button>
+    <button onclick="showSection('sell-item')">Sell</button>
+    <button onclick="showSection('inventory')">Inventory</button>
+    <button onclick="showSection('analytics')">Analytics</button>
+  </div>
+
+  <!-- Register Item Section -->
+  <div id="register-item" class="section active">
+    <h2>Register Item</h2>
+    <div class="camera-container" id="cameraContainer">
+      <div class="fake-camera">[ Camera View ]</div>
+      <button class="button" onclick="captureFakePhoto()">Capture Photo</button>
+    </div>
+
+    <div class="preview-container" id="previewContainer">
+      <div class="preview-img">[ Captured Photo ]</div>
+      <button class="button" onclick="simulateAnalyzePhoto()">Analyze Photo</button>
+    </div>
+
+    <div class="item-details" id="itemDetails">
+      <h3>Detected Item</h3>
+      <p id="itemDescription">No description available</p>
+      <button class="button" onclick="saveItem()">Save to Inventory</button>
+    </div>
+  </div>
+
+  <!-- Sell Item Section -->
+  <div id="sell-item" class="section">
+    <h2>Sell Item</h2>
+    <button class="button" onclick="scanItem()">Scan Item</button>
+    <div class="sell-details" id="sellItemDetails" style="display: none;">
+      <p><strong>Item:</strong> <span id="sellItemName"></span></p>
+      <p><strong>Price:</strong> 50 DKK</p>
+      <button class="button" onclick="sellItem()">Complete Sale</button>
+    </div>
+  </div>
+
+  <!-- Inventory Section -->
+  <div id="inventory" class="section">
+    <h2>Inventory</h2>
+    <ul id="inventoryList"></ul>
+  </div>
+
+  <!-- Analytics Section -->
+  <div id="analytics" class="section">
+    <h2>Analytics</h2>
+    <ul id="analyticsList"></ul>
+    <p class="analytics-total">Total Sales: <span id="totalSales">0</span> DKK</p>
+  </div>
+
+</div>
+
+<script>
+  let inventory = []; 
+  let soldItems = [];
+  let totalSales = 0;
+  
+  function showSection(sectionId) {
+    document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+    document.querySelectorAll('.menu button').forEach(button => button.classList.remove('active'));
+    document.getElementById(sectionId).classList.add('active');
+    document.querySelector(`.menu button[onclick="showSection('${sectionId}')"]`).classList.add('active');
+    if (sectionId === "inventory") updateInventoryDisplay();
+    if (sectionId === "analytics") updateAnalyticsDisplay();
+  }
+
+  function captureFakePhoto() {
+    document.getElementById('cameraContainer').style.display = 'none';
+    document.getElementById('previewContainer').style.display = 'block';
+  }
+
+  function simulateAnalyzePhoto() {
+    document.getElementById('previewContainer').style.display = 'none';
+    document.getElementById('itemDetails').style.display = 'block';
+    const simulatedDescription = "Black Polo Ralph Lauren T-shirt";
+    document.getElementById('itemDescription').innerText = simulatedDescription;
+  }
+
+  function saveItem() {
+    const description = document.getElementById('itemDescription').innerText;
+    inventory.push({ name: description });
+    alert(`Item "${description}" added to inventory.`);
+    resetRegisterItemFlow();
+  }
+
+  function resetRegisterItemFlow() {
+    document.getElementById('cameraContainer').style.display = 'block';
+    document.getElementById('previewContainer').style.display = 'none';
+    document.getElementById('itemDetails').style.display = 'none';
+  }
+
+  function updateInventoryDisplay() {
+    const inventoryList = document.getElementById('inventoryList');
+    inventoryList.innerHTML = "";
+    inventory.forEach(item => {
+      const listItem = document.createElement('li');
+      listItem.textContent = item.name;
+      inventoryList.appendChild(listItem);
+    });
+  }
+
+  function scanItem() {
+    if (inventory.length > 0) {
+      const item = inventory[0];
+      document.getElementById('sellItemName').innerText = item.name;
+      document.getElementById('sellItemDetails').style.display = 'block';
+    } else {
+      alert("No items available in inventory to sell.");
+    }
+  }
+
+  function sellItem() {
+    if (inventory.length > 0) {
+      const soldItem = inventory.shift();
+      soldItems.push(soldItem);
+      totalSales += 50;
+      updateInventoryDisplay();
+      updateAnalyticsDisplay();
+      alert(`Item "${soldItem.name}" sold for 50 DKK.`);
+      document.getElementById('sellItemDetails').style.display = 'none';
+    }
+  }
+
+  function updateAnalyticsDisplay() {
+    const analyticsList = document.getElementById('analyticsList');
+    analyticsList.innerHTML = "";
+    soldItems.forEach(item => {
+      const listItem = document.createElement('li');
+      listItem.textContent = `${item.name} - 50 DKK`;
+      analyticsList.appendChild(listItem);
+    });
+    document.getElementById('totalSales').innerText = totalSales;
+  }
+</script>
+
+</body>
+</html>
